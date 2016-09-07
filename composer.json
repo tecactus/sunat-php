@@ -1,0 +1,35 @@
+{
+  "name": "tecactus/sunat-php",
+  "description": "SUNAT package for PHP",
+  "keywords": [
+    "sunat",
+    "php",
+    "exchange rate",
+    "tipo de cambio",
+    "ruc",
+    "validar",
+    "validate",
+    "consultar",
+    "consulta ruc",
+    "consulta ruc sin codigo captcha",
+    "captcha"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Paul Vidal",
+      "email": "paul@tecactus.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=5.5.0",
+    "guzzlehttp/guzzle": "^6.2",
+    "nesbot/carbon": "~1.10"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tecactus\\Sunat\\": "src/"
+    }
+  }
+}
