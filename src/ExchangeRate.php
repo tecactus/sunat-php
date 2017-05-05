@@ -5,6 +5,9 @@ namespace Tecactus\Sunat;
 
 use GuzzleHttp\Client;
 use Tecactus\Sunat\Exception\InvalidDateException;
+use Tecactus\Sunat\Exception\UnauthenticatedException;
+use Tecactus\Sunat\Exception\ServerErrorException;
+use Tecactus\Sunat\Exception\UndefinedErrorException;
 use Carbon\Carbon;
 
 class ExchangeRate
@@ -18,14 +21,31 @@ class ExchangeRate
         // $this->baseUri = "https://tecactus.com/";
         $this->baseUri = "http://tecactus.app/";
         $this->apiToken = $apiToken;
-        $this->client = new Client(['base_uri' => $this->baseUri, 'verify' => false, 'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiToken]]);
+        $this->client = new Client(['base_uri' => $this->baseUri, 'verify' => __DIR__.'/cacert.pem', 'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiToken]]);
     }
 
     public function get($year, $month, $day = null, $forcePrevious = false, $asArray = false)
     {
-        $this->validate($year, $month, $day);
-        $response = $this->client->request('POST', 'api/sunat/exchange-rate', ['query' => $this->getQuery($year, $month, $day, $forcePrevious)]);
-        return json_decode($response->getBody()->getContents(), $asArray);
+        try {
+            $this->validate($year, $month, $day);
+            $response = $this->client->request('POST', 'api/sunat/exchange-rate', ['query' => $this->getQuery($year, $month, $day, $forcePrevious)]);
+            return json_decode($response->getBody()->getContents(), $asArray);
+        } catch (ClientException $e) {
+            $status = $e->getResponse()->getStatusCode();
+            switch ($status) {
+                case 401:
+                    throw new UnauthenticatedException('Token seems not to be valid.');
+                    break;
+
+                case 500:
+                    throw new ServerErrorException('Server error.');
+                    break;
+                
+                default:
+                    throw new UndefinedErrorException('An unexpected error has ben ocurred.');
+                    break;
+            }
+        }
     }
 
     protected function getQuery($year, $month, $day, $forcePrevious) {

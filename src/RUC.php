@@ -6,6 +6,9 @@ namespace Tecactus\Sunat;
 use GuzzleHttp\Client;
 use Tecactus\Sunat\Exception\InvalidRucException;
 use Tecactus\Sunat\Exception\InvalidDniException;
+use Tecactus\Sunat\Exception\UnauthenticatedException;
+use Tecactus\Sunat\Exception\ServerErrorException;
+use Tecactus\Sunat\Exception\UndefinedErrorException;
 
 class RUC
 {
@@ -17,27 +20,61 @@ class RUC
     {
         $this->baseUri = "https://tecactus.com/";
         $this->apiToken = $apiToken;
-        $this->client = new Client(['base_uri' => $this->baseUri, 'verify' => false, 'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiToken]]);
+        $this->client = new Client(['base_uri' => $this->baseUri, 'verify' => __DIR__.'/cacert.pem', 'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiToken]]);
     }
 
     public function getByRuc($ruc, $asArray = false)
     {
-        if (!$this->validate($ruc)) {
-            throw new InvalidRucException('RUC number seems not to be valid.');
+        try {
+            if (!$this->validate($ruc)) {
+                throw new InvalidRucException('RUC number seems not to be valid.');
+            }
+            $response = $this->client->request('POST', 'api/sunat/query/ruc', ['query' => [
+                'ruc' => $ruc
+            ]]);
+            return json_decode($response->getBody()->getContents(), $asArray);
+        } catch (ClientException $e) {
+            $status = $e->getResponse()->getStatusCode();
+            switch ($status) {
+                case 401:
+                    throw new UnauthenticatedException('Token seems not to be valid.');
+                    break;
+
+                case 500:
+                    throw new ServerErrorException('Server error.');
+                    break;
+                
+                default:
+                    throw new UndefinedErrorException('An unexpected error has ben ocurred.');
+                    break;
+            }
         }
-        $response = $this->client->request('POST', 'api/sunat/query/ruc', ['query' => [
-            'ruc' => $ruc
-        ]]);
-        return json_decode($response->getBody()->getContents(), $asArray);
     }
 
     public function getByDni($dni, $asArray = false)
     {
-        if (!$this->validateDni($dni)) {
-            throw new InvalidDniException('DNI number seems not to be valid.');
+        try {
+            if (!$this->validateDni($dni)) {
+                throw new InvalidDniException('DNI number seems not to be valid.');
+            }
+            $response = $this->client->request('POST', 'api/sunat/query/dni', ['query' => 'dni=' . $dni]);
+            return json_decode($response->getBody()->getContents(), $asArray);
+        } catch (ClientException $e) {
+            $status = $e->getResponse()->getStatusCode();
+            switch ($status) {
+                case 401:
+                    throw new UnauthenticatedException('Token seems not to be valid.');
+                    break;
+
+                case 500:
+                    throw new ServerErrorException('Server error.');
+                    break;
+                
+                default:
+                    throw new UndefinedErrorException('An unexpected error has ben ocurred.');
+                    break;
+            }
         }
-        $response = $this->client->request('POST', 'api/sunat/query/dni', ['query' => 'dni=' . $dni]);
-        return json_decode($response->getBody()->getContents(), $asArray);
     }    
 
     public function validate($value)
