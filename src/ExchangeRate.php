@@ -18,7 +18,7 @@ class ExchangeRate
         // $this->baseUri = "https://tecactus.com/";
         $this->baseUri = "http://tecactus.app/";
         $this->apiToken = $apiToken;
-        $this->client = new Client(['base_uri' => $this->baseUri, 'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiToken]]);
+        $this->client = new Client(['base_uri' => $this->baseUri, 'verify' => false, 'headers' => ['Accept' => 'application/json', 'Authorization' => 'Bearer ' . $this->apiToken]]);
     }
 
     public function get($year, $month, $day = null, $forcePrevious = false, $asArray = false)
